@@ -9,45 +9,26 @@ output:
 
 Introduction
 
-This project explores how adverse childhood experiences (ACEs) — 
-particularly parental depression and household dysfunction — shape 
-child and adult outcomes, and what factors predict resilience.
+This project asks which socioeconomic and behavioral factors are associated with depressive symptoms, and which look protective. It is the first project in a portfolio built around one broader question: what keeps people stuck, and what helps them move forward? Later projects extend that question to biology, intergenerational trauma, and child development.
+
+Here I use NHANES, a national health survey, to build a behavioral and socioeconomic baseline. Through exploratory analysis, I compare how poverty, sleep, physical activity, and gender vary with self-reported depression severity.
 
 Setup
-
 ```{r setup, message=FALSE, warning=FALSE}
-install.packages(c("tidyverse", "haven", "skimr", "ggplot2", "shiny"))
 library(tidyverse)
-library(skimr)
-library(ggplot2)
-```
-
-
- Load Data
-
-```{r load-data}
-install.packages("medicaldata")
-library(medicaldata)
-
-data(package = "medicaldata")
-```
-
-```{r explore-datasets}
-data(package = "medicaldata")$results[, c("Item", "Title")]
-```
-
-```{r load-aces}
-remove.packages("medicaldata")
-
-install.packages("NHANES")
 library(NHANES)
+library(skimr)
+library(reshape2)
+```
 
+```{r load-data, message=FALSE, warning=FALSE}
+library(NHANES)
 data(NHANES)
 glimpse(NHANES)
 ```
 
 
-What socioeconomic and behavioral factors predict depression severity in adults — and what looks protective?
+**Guiding question:** What socioeconomic and behavioral factors are associated with depression severity, and what looks protective?
 
 First Look at Our Key Variables
 
@@ -57,6 +38,8 @@ NHANES %>%
          LittleInterest, SleepTrouble, PhysActive, HHIncomeMid) %>%
   skim()
 ```
+
+The depression question was answered by about two-thirds of respondents (6,673 of 10,000), so the analyses below use those complete responses. Poverty is measured as the ratio of family income to the poverty threshold, so lower values mean more economic hardship and a value of 1 is the poverty line.
 
 Depression Distribution
 
@@ -74,12 +57,10 @@ NHANES %>%
   theme(legend.position = "none")
 ```
 
-Majority report no depression — expected
-But ~1000 report "Several" days and ~450 report "Most" days
-That's roughly 1 in 7 people in this sample experiencing significant depressive symptoms
+Most respondents report no depressive feelings. About 1,000 report feeling down or hopeless on several days and about 420 on most days. Among respondents who answered, that is roughly 21% reporting depressive symptoms on at least several days, a substantial share of the sample.
 
-That's not a small signal. That's a public health pattern.
-Adding poverty:
+
+
 Depression by Poverty Level
 
 ```{r depression-poverty}
@@ -99,21 +80,10 @@ NHANES %>%
 
 What this shows:
 
-"None" group — median poverty index ~3.3 (more resources)
-"Several" group — median drops to ~2.3
-"Most" group — median drops further to ~1.4 (closest to poverty line)
+The median poverty index falls at each step of depression severity: about 3.3 in the "None" group, about 2.3 in the "Several" group, and about 1.4 in the "Most" group, close to the poverty line.
 
-The pattern is clear and consistent — as depression severity increases, poverty index decreases. More depression, fewer resources. Every step of the gradient moves in the same direction.
-That's not noise. That's a signal worth writing about.
+**Finding 1: Poverty and depression move together.** Respondents reporting depressive feelings on most days have markedly lower poverty index scores than those reporting none. Economic hardship and depressive symptoms travel together in this sample.
 
-## Finding 1: Poverty and Depression Move Together
-
-Analysis of the NHANES sample reveals a consistent gradient between 
-economic hardship and depression severity. Individuals reporting 
-depressive symptoms "most" days show markedly lower poverty index 
-scores compared to those reporting none, suggesting that financial 
-stress and mental health burden are deeply intertwined — not independent 
-risk factors.
 
 ```{r depression-sleep}
 NHANES %>%
@@ -131,20 +101,9 @@ NHANES %>%
 
 What this shows:
 
-"None" group — ~20% report sleep trouble
-"Several" group — jumps to ~38%
-"Most" group — crosses 50%. More than half report sleep trouble
+The share reporting sleep trouble rises with depression severity: about 20% in the "None" group, about 38% in the "Several" group, and more than 50% in the "Most" group.
 
-The gradient holds again. Every step up in depression severity brings more sleep disruption. And that 50% threshold in the "Most" group is striking — sleep trouble stops being a symptom and starts looking like a co-condition.
-
-## Finding 2: Sleep Disruption Scales with Depression Severity
-
-Among those reporting depressive symptoms most days, over half 
-also report trouble sleeping — more than double the rate seen in 
-those with no depression. This pattern suggests sleep disruption 
-is not merely a side effect but a compounding factor in severe 
-depression, potentially creating a reinforcing cycle of poor 
-mental health and physical dysregulation.
+**Finding 2: Sleep trouble rises with depression severity.** Among respondents with depressive feelings on most days, over half also report trouble sleeping, more than double the rate in the "None" group. These data cannot show whether poor sleep contributes to depression, depression disrupts sleep, or both.
 
 ```{r depression-physactive}
 NHANES %>%
@@ -160,29 +119,10 @@ NHANES %>%
   theme_minimal()
 ```
 
-first resilience finding.
-What this shows:
+The share who are physically active falls as depression severity rises: about 58% in the "None" group, about 47% in the "Several" group, and about 34% in the "Most" group.
 
-"None" group — ~58% are physically active
-"Several" group — drops to ~47%
-"Most" group — drops to ~34%
+**Finding 3: Physical activity is more common among people with fewer depressive symptoms.** Nearly 6 in 10 respondents with no depressive feelings are physically active, compared with about 1 in 3 of those with symptoms on most days. This is the clearest protective-looking pattern in the analysis, but a snapshot cannot tell us whether activity protects against depression, depression reduces activity, or both.
 
-The gradient flips. As depression gets worse, physical activity decreases. Or framed the other way — physical activity is consistently more present in the less depressed group.
-This is your first answer to what gets people out — or at least what looks different in people who aren't stuck.
-
-## Finding 3: Physical Activity as a Protective Factor
-
-Physical activity follows a clear inverse relationship with depression 
-severity. Nearly 6 in 10 people reporting no depression are physically 
-active, compared to only 1 in 3 among those experiencing depressive 
-symptoms most days. While causality cannot be established from this 
-data alone, the pattern is consistent with research suggesting movement 
-as a meaningful protective factor against depression.
-
-
-Finding 1: Poverty and depression move together
-Finding 2: Sleep disruption scales with severity
-Finding 3: Physical activity is protective
 
 ## Gender and Depression
 
@@ -202,71 +142,27 @@ NHANES %>%
 
 What this shows:
 
-"None" group — roughly 50/50 male/female, slightly more male
-"Several" group — shifts to ~55% female
-"Most" group — shifts further to ~60% female
+The female share rises with depression severity: just under half in the "None" group, about 55% in the "Several" group, and about 60% in the "Most" group.
 
-As depression severity increases, women are increasingly overrepresented. Men don't disappear from the severe group — but the gender gap widens at every step.
-
-## Finding 4: Gender and Depression Severity
-
-Women are disproportionately represented among those experiencing 
-the most severe depressive symptoms. While the sample is roughly 
-equal by gender overall, women account for nearly 60% of those 
-reporting depressive feelings most days. This pattern is consistent 
-with well-documented gender disparities in depression prevalence 
-and raises important questions about the structural, biological, 
-and social factors that place women at higher risk — including 
-caregiving burden, economic inequality, and hormonal vulnerability.
+**Finding 4: Women are overrepresented at higher severity.** Women make up about 60% of respondents reporting depressive feelings on most days, although the sample is split roughly evenly by gender overall. Possible explanations, such as differences in caregiving burden, economic inequality, or biology, are beyond what this analysis can test.
 
 
-the seed for Project 2:
-The biological angle is genuinely rich territory. Possible question:
-"How do biological markers — cortisol, inflammation, hormonal patterns — differ across depression severity, and do they interact with gender?"
-NHANES actually has some biological variables already — testosterone, cholesterol. 
-for deeper biology:
 
-NHANES lab files — includes CRP (inflammation marker), cortisol proxies
-UK Biobank — massive, includes genetics, biological assays, mental health
-ABCD Study — brain imaging + family environment + child outcomes
+## Conclusion
 
-4 findings:
+### What this analysis shows
 
-Poverty and depression move together
-Sleep disruption scales with severity
-Physical activity is protective
-Women are overrepresented in severe depression
+In this NHANES sample, more frequent depressive symptoms go along with lower income relative to poverty, more sleep trouble, less physical activity, and a higher share of women. Sleep trouble showed the strongest association (r = 0.21), followed by poverty (r = -0.19), household income (r = -0.18), and physical activity (r = -0.11). Gender (r = 0.07) and age (r = -0.02) showed little. No one factor dominates.
 
-# Conclusion
+### What this analysis cannot show
 
-```{r conclusion}
-# Summary of key findings
-```
+- **Causation or direction.** The data are a snapshot, not a timeline. We can say these factors co-occur, not that one causes another.
+- **Independent effects.** The analysis is bivariate and the factors overlap (poverty and income especially), so it cannot separate their individual contributions.
+- **Clinical depression.** Depression is measured with a single self-report item about feeling down or hopeless.
 
-## What This Analysis Shows
+### What comes next
 
-This exploratory analysis of NHANES data reveals a consistent, 
-multi-layered portrait of depression in the US adult population. 
-Economic hardship, sleep disruption, physical inactivity, and 
-gender each independently track with depression severity — and 
-likely interact with one another in ways this cross-sectional 
-data cannot fully capture.
-
-## What This Analysis Cannot Tell Us
-
-Causality. This data is a snapshot, not a timeline. We cannot 
-say poverty *causes* depression, or that inactivity *leads to* 
-worse outcomes — only that they co-occur in a meaningful pattern. 
-Longitudinal data would be required to establish direction.
-
-## What Comes Next
-
-Project 2 will examine biological markers — inflammation, 
-hormonal patterns, and physiological stress responses — and 
-their relationship to depression severity and gender. Using 
-NHANES lab files and potentially UK Biobank data, the goal 
-is to move beyond behavioral correlates into the biological 
-substrates of what keeps people stuck.
+Project 2 moves from behavioral correlates to biology, examining differential gene expression in major depressive disorder (GEO dataset GSE98793, analyzed with DESeq2). Later projects examine epigenetic mechanisms of intergenerational trauma using DNA methylation data, and developmental outcomes and family environment using the ABCD Study.
 
 
 ## Summary: How All Factors Relate
@@ -316,18 +212,18 @@ ggplot(melted_cor, aes(x = Var1, y = Var2, fill = value)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
-What to read here:
-Depression row (bottom):
+The depression row of the matrix summarizes how each factor relates to depression severity:
 
-Sleep_Trouble: +0.21 — strongest positive relationship. More sleep trouble, more depression
-Poverty: -0.19 — lower poverty index (more poverty), more depression
-HH_Income: -0.18 — lower income, more depression
-Physical_Activity: -0.11 — less activity, more depression
-Gender_Female: +0.07 — small but present female skew
-Age: -0.02 — essentially no relationship
+- **Sleep trouble (r = 0.21):** the strongest positive association
+- **Poverty index (r = -0.19):** lower poverty index, meaning more hardship, goes with more depression
+- **Household income (r = -0.18):** lower income goes with more depression
+- **Physical activity (r = -0.11):** less activity goes with more depression
+- **Gender, female (r = 0.07):** a small female skew
+- **Age (r = -0.02):** essentially no relationship
 
-The bonus finding — Poverty and HH_Income: +0.88
-That's expected — they measure similar things. Actually validates your data is clean.
+Poverty index and household income are strongly correlated with each other (r = 0.88) because both measure economic resources, so they should be read as overlapping rather than independent factors.
+
+**Finding 5: No single factor dominates.** Sleep trouble showed the strongest association with depression, followed by poverty, household income, and physical activity. All correlations are modest (|r| of 0.21 or less), which suggests depressive symptoms are linked to several overlapping burdens, economic, physiological, and behavioral, rather than to any one cause. If that holds, interventions that address only one factor may fall short.
 
 ## Finding 5: Summary — What Matters Most
 
