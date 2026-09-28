@@ -4,7 +4,7 @@ A portfolio of behavioral data science projects at the intersection of bioinform
 
 The work is organized around one question: **what keeps people stuck, and what helps them move forward?** Each project looks at that question from a different angle, from social and behavioral context to biology and development.
 
-**Author:** Maliha Arshad, MS Bioinformatics (Data Analytics concentration), Northeastern University · BA Biology (Psychology minor), Rutgers University
+**Author:** Maliha Arshad, Bioinformatics Scientist
 
 ---
 
