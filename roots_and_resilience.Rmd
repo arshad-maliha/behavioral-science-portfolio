@@ -1,0 +1,347 @@
+---
+title: 'Roots and Resilience: How Family Adversity Shapes Child and Adult Outcomes'
+author: "Maliha"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+Introduction
+
+This project explores how adverse childhood experiences (ACEs) — 
+particularly parental depression and household dysfunction — shape 
+child and adult outcomes, and what factors predict resilience.
+
+Setup
+
+```{r setup, message=FALSE, warning=FALSE}
+install.packages(c("tidyverse", "haven", "skimr", "ggplot2", "shiny"))
+library(tidyverse)
+library(skimr)
+library(ggplot2)
+```
+
+
+ Load Data
+
+```{r load-data}
+install.packages("medicaldata")
+library(medicaldata)
+
+data(package = "medicaldata")
+```
+
+```{r explore-datasets}
+data(package = "medicaldata")$results[, c("Item", "Title")]
+```
+
+```{r load-aces}
+remove.packages("medicaldata")
+
+install.packages("NHANES")
+library(NHANES)
+
+data(NHANES)
+glimpse(NHANES)
+```
+
+
+What socioeconomic and behavioral factors predict depression severity in adults — and what looks protective?
+
+First Look at Our Key Variables
+
+```{r explore-key-vars}
+NHANES %>%
+  select(Age, Gender, Poverty, Depressed, DaysMentHlthBad, 
+         LittleInterest, SleepTrouble, PhysActive, HHIncomeMid) %>%
+  skim()
+```
+
+Depression Distribution
+
+```{r depression-viz}
+NHANES %>%
+  filter(!is.na(Depressed)) %>%
+  ggplot(aes(x = Depressed, fill = Depressed)) +
+  geom_bar() +
+  labs(
+    title = "Depression Frequency in NHANES Sample",
+    x = "Depressed (Days in past 2 weeks)",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+Majority report no depression — expected
+But ~1000 report "Several" days and ~450 report "Most" days
+That's roughly 1 in 7 people in this sample experiencing significant depressive symptoms
+
+That's not a small signal. That's a public health pattern.
+Adding poverty:
+Depression by Poverty Level
+
+```{r depression-poverty}
+NHANES %>%
+  filter(!is.na(Depressed), !is.na(Poverty)) %>%
+  ggplot(aes(x = Depressed, y = Poverty, fill = Depressed)) +
+  geom_boxplot() +
+  labs(
+    title = "Poverty Level by Depression Severity",
+    x = "Depression Frequency",
+    y = "Poverty Index (lower = more poverty)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+
+What this shows:
+
+"None" group — median poverty index ~3.3 (more resources)
+"Several" group — median drops to ~2.3
+"Most" group — median drops further to ~1.4 (closest to poverty line)
+
+The pattern is clear and consistent — as depression severity increases, poverty index decreases. More depression, fewer resources. Every step of the gradient moves in the same direction.
+That's not noise. That's a signal worth writing about.
+
+## Finding 1: Poverty and Depression Move Together
+
+Analysis of the NHANES sample reveals a consistent gradient between 
+economic hardship and depression severity. Individuals reporting 
+depressive symptoms "most" days show markedly lower poverty index 
+scores compared to those reporting none, suggesting that financial 
+stress and mental health burden are deeply intertwined — not independent 
+risk factors.
+
+```{r depression-sleep}
+NHANES %>%
+  filter(!is.na(Depressed), !is.na(SleepTrouble)) %>%
+  ggplot(aes(x = Depressed, fill = SleepTrouble)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Sleep Trouble by Depression Severity",
+    x = "Depression Frequency",
+    y = "Proportion",
+    fill = "Sleep Trouble"
+  ) +
+  theme_minimal()
+```
+
+What this shows:
+
+"None" group — ~20% report sleep trouble
+"Several" group — jumps to ~38%
+"Most" group — crosses 50%. More than half report sleep trouble
+
+The gradient holds again. Every step up in depression severity brings more sleep disruption. And that 50% threshold in the "Most" group is striking — sleep trouble stops being a symptom and starts looking like a co-condition.
+
+## Finding 2: Sleep Disruption Scales with Depression Severity
+
+Among those reporting depressive symptoms most days, over half 
+also report trouble sleeping — more than double the rate seen in 
+those with no depression. This pattern suggests sleep disruption 
+is not merely a side effect but a compounding factor in severe 
+depression, potentially creating a reinforcing cycle of poor 
+mental health and physical dysregulation.
+
+```{r depression-physactive}
+NHANES %>%
+  filter(!is.na(Depressed), !is.na(PhysActive)) %>%
+  ggplot(aes(x = Depressed, fill = PhysActive)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Physical Activity by Depression Severity",
+    x = "Depression Frequency",
+    y = "Proportion",
+    fill = "Physically Active"
+  ) +
+  theme_minimal()
+```
+
+first resilience finding.
+What this shows:
+
+"None" group — ~58% are physically active
+"Several" group — drops to ~47%
+"Most" group — drops to ~34%
+
+The gradient flips. As depression gets worse, physical activity decreases. Or framed the other way — physical activity is consistently more present in the less depressed group.
+This is your first answer to what gets people out — or at least what looks different in people who aren't stuck.
+
+## Finding 3: Physical Activity as a Protective Factor
+
+Physical activity follows a clear inverse relationship with depression 
+severity. Nearly 6 in 10 people reporting no depression are physically 
+active, compared to only 1 in 3 among those experiencing depressive 
+symptoms most days. While causality cannot be established from this 
+data alone, the pattern is consistent with research suggesting movement 
+as a meaningful protective factor against depression.
+
+
+Finding 1: Poverty and depression move together
+Finding 2: Sleep disruption scales with severity
+Finding 3: Physical activity is protective
+
+## Gender and Depression
+
+```{r depression-gender}
+NHANES %>%
+  filter(!is.na(Depressed), !is.na(Gender)) %>%
+  ggplot(aes(x = Depressed, fill = Gender)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Depression Severity by Gender",
+    x = "Depression Frequency",
+    y = "Proportion",
+    fill = "Gender"
+  ) +
+  theme_minimal()
+```
+
+What this shows:
+
+"None" group — roughly 50/50 male/female, slightly more male
+"Several" group — shifts to ~55% female
+"Most" group — shifts further to ~60% female
+
+As depression severity increases, women are increasingly overrepresented. Men don't disappear from the severe group — but the gender gap widens at every step.
+
+## Finding 4: Gender and Depression Severity
+
+Women are disproportionately represented among those experiencing 
+the most severe depressive symptoms. While the sample is roughly 
+equal by gender overall, women account for nearly 60% of those 
+reporting depressive feelings most days. This pattern is consistent 
+with well-documented gender disparities in depression prevalence 
+and raises important questions about the structural, biological, 
+and social factors that place women at higher risk — including 
+caregiving burden, economic inequality, and hormonal vulnerability.
+
+
+the seed for Project 2:
+The biological angle is genuinely rich territory. Possible question:
+"How do biological markers — cortisol, inflammation, hormonal patterns — differ across depression severity, and do they interact with gender?"
+NHANES actually has some biological variables already — testosterone, cholesterol. 
+for deeper biology:
+
+NHANES lab files — includes CRP (inflammation marker), cortisol proxies
+UK Biobank — massive, includes genetics, biological assays, mental health
+ABCD Study — brain imaging + family environment + child outcomes
+
+4 findings:
+
+Poverty and depression move together
+Sleep disruption scales with severity
+Physical activity is protective
+Women are overrepresented in severe depression
+
+# Conclusion
+
+```{r conclusion}
+# Summary of key findings
+```
+
+## What This Analysis Shows
+
+This exploratory analysis of NHANES data reveals a consistent, 
+multi-layered portrait of depression in the US adult population. 
+Economic hardship, sleep disruption, physical inactivity, and 
+gender each independently track with depression severity — and 
+likely interact with one another in ways this cross-sectional 
+data cannot fully capture.
+
+## What This Analysis Cannot Tell Us
+
+Causality. This data is a snapshot, not a timeline. We cannot 
+say poverty *causes* depression, or that inactivity *leads to* 
+worse outcomes — only that they co-occur in a meaningful pattern. 
+Longitudinal data would be required to establish direction.
+
+## What Comes Next
+
+Project 2 will examine biological markers — inflammation, 
+hormonal patterns, and physiological stress responses — and 
+their relationship to depression severity and gender. Using 
+NHANES lab files and potentially UK Biobank data, the goal 
+is to move beyond behavioral correlates into the biological 
+substrates of what keeps people stuck.
+
+
+## Summary: How All Factors Relate
+
+```{r correlation-summary}
+library(reshape2)
+
+# Create numeric version of key variables
+nhanes_numeric <- NHANES %>%
+  filter(!is.na(Depressed), !is.na(Poverty), 
+         !is.na(SleepTrouble), !is.na(PhysActive),
+         !is.na(Gender)) %>%
+  mutate(
+    Depressed_n = as.numeric(Depressed),
+    SleepTrouble_n = ifelse(SleepTrouble == "Yes", 1, 0),
+    PhysActive_n = ifelse(PhysActive == "Yes", 1, 0),
+    Gender_n = ifelse(Gender == "female", 1, 0)
+  ) %>%
+  select(
+    Depression = Depressed_n,
+    Poverty = Poverty,
+    Sleep_Trouble = SleepTrouble_n,
+    Physical_Activity = PhysActive_n,
+    Gender_Female = Gender_n,
+    Age = Age,
+    HH_Income = HHIncomeMid
+  )
+
+# Correlation matrix
+cor_matrix <- cor(nhanes_numeric, use = "complete.obs")
+
+# Melt and plot
+melted_cor <- melt(cor_matrix)
+
+ggplot(melted_cor, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(
+    low = "steelblue", mid = "white", high = "tomato",
+    midpoint = 0, limit = c(-1, 1),
+    name = "Correlation"
+  ) +
+  geom_text(aes(label = round(value, 2)), size = 3) +
+  labs(
+    title = "Correlation Matrix: Depression and Associated Factors",
+    x = "", y = ""
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+What to read here:
+Depression row (bottom):
+
+Sleep_Trouble: +0.21 — strongest positive relationship. More sleep trouble, more depression
+Poverty: -0.19 — lower poverty index (more poverty), more depression
+HH_Income: -0.18 — lower income, more depression
+Physical_Activity: -0.11 — less activity, more depression
+Gender_Female: +0.07 — small but present female skew
+Age: -0.02 — essentially no relationship
+
+The bonus finding — Poverty and HH_Income: +0.88
+That's expected — they measure similar things. Actually validates your data is clean.
+
+## Finding 5: Summary — What Matters Most
+
+The correlation matrix confirms and quantifies the patterns observed 
+throughout this analysis. Sleep trouble shows the strongest individual 
+relationship with depression (r = 0.21), followed closely by poverty 
+(r = -0.19) and household income (r = -0.18). Physical activity shows 
+a modest protective relationship (r = -0.11). Gender shows a small 
+but consistent female skew (r = 0.07).
+
+Notably, no single factor dominates. Depression appears to be 
+distributed across multiple compounding burdens — economic, 
+physiological, and behavioral — rather than driven by any one cause. 
+This has direct implications for intervention: addressing only one 
+factor may be insufficient.
+
+
